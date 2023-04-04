@@ -1,5 +1,5 @@
 use alloc::{boxed::Box, vec::Vec};
-use core::{intrinsics, ptr};
+use core::{intrinsics, ptr, fmt::Debug};
 
 use crate::{
     header::{libgen, stdio, stdlib},
@@ -35,8 +35,19 @@ impl Stack {
     }
 }
 
+impl Debug for Stack{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Stack")
+            .field("argc", &self.argc)
+            .field("argv0", &self.argv0)
+            .finish()
+    }
+}
+
 unsafe fn copy_string_array(array: *const *const c_char, len: usize) -> Vec<*mut c_char> {
+    println!("copy_string_array: array: {:p}, len: {}", array, len);
     let mut vec = Vec::with_capacity(len + 1);
+    println!("new vec ok");
     for i in 0..len {
         let item = *array.add(i);
         let mut len = 0;
@@ -169,17 +180,21 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
         fn _init();
         fn main(argc: isize, argv: *mut *mut c_char, envp: *mut *mut c_char) -> c_int;
     }
-
+    println!("relibc_start: sp={:?}", sp);
     // Ensure correct host system before executing more system calls
     relibc_verify_host();
-
+    use core::arch::asm;
+    
     // Initialize TLS, if necessary
     ld_so::init(sp);
+
+    println!("alloc init");
 
     // Set up the right allocator...
     // if any memory rust based memory allocation happen before this step .. we are doomed.
     alloc_init();
 
+    println!("alloc init ok");
     if let Some(tcb) = ld_so::tcb::Tcb::current() {
         // Update TCB mspace
         tcb.mspace = ALLOCATOR.get_book_keeper();
@@ -192,17 +207,19 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
             tcb.linker_ptr = Box::into_raw(Box::new(Mutex::new(linker)));
         }
     }
-
+    println!("to copy args");
     // Set up argc and argv
     let argc = sp.argc;
     let argv = sp.argv();
     platform::inner_argv = copy_string_array(argv, argc as usize);
+    println!("copy args ok");
     platform::argv = platform::inner_argv.as_mut_ptr();
     // Special code for program_invocation_name and program_invocation_short_name
     if let Some(arg) = platform::inner_argv.get(0) {
         platform::program_invocation_name = *arg;
         platform::program_invocation_short_name = libgen::basename(*arg);
     }
+    println!("to check environ");
     // We check for NULL here since ld.so might already have initialized it for us, and we don't
     // want to overwrite it if constructors in .init_array of dependency libraries have called
     // setenv.
@@ -216,14 +233,17 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
         platform::OUR_ENVIRON = copy_string_array(envp, len);
         platform::environ = platform::OUR_ENVIRON.as_mut_ptr();
     }
+    println!("to get auxvs");
     let auxvs = get_auxvs(sp.auxv().cast());
+    println!("to init platform");
     crate::platform::init(auxvs);
 
     // Setup signal stack, otherwise we cannot handle any signals besides SIG_IGN/SIG_DFL behavior.
     #[cfg(target_os = "redox")]
     setup_sigstack();
-
+    println!("before init_array()");
     init_array();
+    println!("init_array() ok");
 
     // Run preinit array
     {
@@ -235,8 +255,10 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
         }
     }
 
+    println!("before _init()");
     // Call init section
     _init();
+    println!("after _init()");
 
     // Run init array
     {
@@ -247,7 +269,7 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
             f = f.offset(1);
         }
     }
-
+    println!("to run main()");
     // not argv or envp, because programs like bash try to modify this *const* pointer :|
     stdlib::exit(main(argc, platform::argv, platform::environ));
 
