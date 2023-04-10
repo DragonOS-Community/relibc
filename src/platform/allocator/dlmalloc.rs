@@ -9,6 +9,7 @@ use super::types::*;
 extern "C" {
     fn create_mspace(capacity: size_t, locked: c_int) -> usize;
     fn create_mspace_with_base(base: *mut c_void, capacity: size_t, locked: c_int) -> usize;
+    fn create_mspace_with_base_(base: *mut c_void, capacity: size_t, locked: c_int)->usize;
     fn mspace_malloc(msp: usize, bytes: size_t) -> *mut c_void;
     fn mspace_memalign(msp: usize, alignment: size_t, bytes: size_t) -> *mut c_void;
     fn mspace_realloc(msp: usize, oldmem: *mut c_void, bytes: size_t) -> *mut c_void;
@@ -31,11 +32,14 @@ impl Allocator {
     pub fn set_book_keeper(&self, mstate: usize) {
         self.mstate.store(mstate, Ordering::Relaxed);
     }
+
     pub fn get_book_keeper(&self) -> usize {
         self.mstate.load(Ordering::Relaxed)
     }
 }
+
 unsafe impl<'a> GlobalAlloc for Allocator {
+
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         alloc_align(layout.size(), layout.align()) as *mut u8
     }
@@ -70,13 +74,17 @@ pub fn new_mspace() -> usize {
 pub fn new_mspace() -> usize {
     use core::sync::atomic::AtomicU8;
 
-    static mut space: [[u8; 128 * 8]; 2] = [[0; 128 * 8]; 2];
+    use crate::header::stdlib::malloc;
+
+    static mut space: [[u8; 128 * 16]; 2] = [[0; 128 * 16]; 2];
     static cnt: AtomicU8 = AtomicU8::new(0);
     let x = cnt.fetch_add(1, Ordering::Relaxed);
     if x > 2 {
         panic!("new_mspace: too many mspace");
     }
-    let r = unsafe { create_mspace_with_base(space[x as usize].as_mut_ptr() as *mut c_void, 128 * 8, 0) };
+    //println!("I am here");
+    //println!("{:#?}",unsafe{space[x as usize].as_mut_ptr()});
+    let r = unsafe { create_mspace_with_base(space[x as usize].as_mut_ptr() as *mut c_void, 128 * 16, 0)};
     println!("new_mspace: {:#018x}", r);
     return r;
 }

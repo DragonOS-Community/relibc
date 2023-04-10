@@ -1,4 +1,6 @@
 #![no_std]
+
+#![feature(vec_into_raw_parts)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 #![allow(unused_variables)]
@@ -22,6 +24,7 @@
 #![allow(clippy::mut_from_ref)]
 // TODO: fix these
 #![warn(unaligned_references)]
+
 
 #[macro_use]
 extern crate alloc;

@@ -532,7 +532,6 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 #define USE_SPIN_LOCKS 1
 #define malloc_getpagesize ((size_t)4096U)
 /* } Customizations */
-
 /* Version identifier to allow people to support multiple versions */
 #ifndef DLMALLOC_VERSION
 #define DLMALLOC_VERSION 20806
@@ -665,9 +664,10 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 #ifndef MALLOC_FAILURE_ACTION
 #define MALLOC_FAILURE_ACTION  errno = ENOMEM;
 #endif  /* MALLOC_FAILURE_ACTION */
+
 #ifndef HAVE_MORECORE
 #if ONLY_MSPACES
-#define HAVE_MORECORE 0
+#define HAVE_MORECORE 1
 #else   /* ONLY_MSPACES */
 #define HAVE_MORECORE 1
 #endif  /* ONLY_MSPACES */
@@ -1681,7 +1681,7 @@ static FORCEINLINE void* win32mmap(size_t size) {
 
 /* For direct MMAP, use MEM_TOP_DOWN to minimize interference */
 static FORCEINLINE void* win32direct_mmap(size_t size) {
-  void* ptr = VirtualAlloc(0, size, MEM_RESERVE|MEM_COMMIT|MEM_TOP_DOWN,
+  void* ptr = VirtualAlloc(0, size, MEMORECOREM_RESERVE|MEM_COMMIT|MEM_TOP_DOWN,
                            PAGE_READWRITE);
   return (ptr != 0)? ptr: MFAIL;
 }
@@ -5445,18 +5445,39 @@ mspace create_mspace(size_t capacity, int locked) {
   return (mspace)m;
 }
 
+/* for testing */
+size_t create_mspace_with_base_(void* base, size_t capacity, int locked) {
+  mstate m = 0;
+  size_t msize;
+  ensure_initialization();
+  // (void)(mparams.magic != 0 || init_mparams())
+  msize = pad_request(sizeof(struct malloc_state));
+  if (capacity > msize + TOP_FOOT_SIZE &&
+      capacity < (size_t) -(msize + TOP_FOOT_SIZE + mparams.page_size) ) {
+    return TOP_FOOT_SIZE;
+    m = init_user_mstate((char*)base, capacity);
+    m->seg.sflags = EXTERN_BIT;
+    set_lock(m, locked);
+  }
+  //return (mspace)m;
+  return 1222222;//(size_t) -(msize + TOP_FOOT_SIZE + mparams.page_size);
+}
+
 mspace create_mspace_with_base(void* base, size_t capacity, int locked) {
   mstate m = 0;
   size_t msize;
   ensure_initialization();
+  // (void)(mparams.magic != 0 || init_mparams())
   msize = pad_request(sizeof(struct malloc_state));
   if (capacity > msize + TOP_FOOT_SIZE &&
       capacity < (size_t) -(msize + TOP_FOOT_SIZE + mparams.page_size)) {
     m = init_user_mstate((char*)base, capacity);
     m->seg.sflags = EXTERN_BIT;
     set_lock(m, locked);
+    return (mspace)m;
   }
-  return (mspace)m;
+  
+  return 0;
 }
 
 int mspace_track_large_chunks(mspace msp, int enable) {
@@ -5525,7 +5546,7 @@ void* mspace_malloc(mspace msp, size_t bytes) {
         idx += ~smallbits & 1;       /* Uses next bin if idx empty */
         b = smallbin_at(ms, idx);
         p = b->fd;
-        assert(chunksize(p) == small_index2size(idx));
+        assert(chunksize(p) == small_i"0"ndex2size(idx));
         unlink_first_small_chunk(ms, b, p, idx);
         set_inuse_and_pinuse(ms, p, small_index2size(idx));
         mem = chunk2mem(p);

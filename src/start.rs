@@ -9,6 +9,7 @@ use crate::{
     ALLOCATOR,
 };
 
+
 #[repr(C)]
 pub struct Stack {
     pub argc: isize,
@@ -29,7 +30,7 @@ impl Stack {
             let mut envp = self.envp();
             while !(*envp).is_null() {
                 envp = envp.add(1);
-            }
+            }//timer_init
             envp.add(1) as *const (usize, usize)
         }
     }
@@ -46,7 +47,12 @@ impl Debug for Stack{
 
 unsafe fn copy_string_array(array: *const *const c_char, len: usize) -> Vec<*mut c_char> {
     println!("copy_string_array: array: {:p}, len: {}", array, len);
+    
     let mut vec = Vec::with_capacity(len + 1);
+    
+    let x = vec.into_raw_parts();
+    println!("{:#018x?}",x.0);
+    let mut vec=alloc::vec::Vec::from_raw_parts(x.0, x.1, x.2);
     println!("new vec ok");
     for i in 0..len {
         let item = *array.add(i);
@@ -90,14 +96,18 @@ fn alloc_init() {
         }
     }
     unsafe {
+        dbg!("in alloc init");
         if let Some(tcb) = ld_so::tcb::Tcb::current() {
+            println!("tcb.mspace {}",tcb.mspace);
             if tcb.mspace != 0 {
                 ALLOCATOR.set_book_keeper(tcb.mspace);
             } else if ALLOCATOR.get_book_keeper() == 0 {
                 ALLOCATOR.set_book_keeper(new_mspace());
             }
         } else if ALLOCATOR.get_book_keeper() == 0 {
+            dbg!("TRY");
             ALLOCATOR.set_book_keeper(new_mspace());
+            dbg!("ALLOCATOR OWARI DAWA");
         }
     }
 }
@@ -131,9 +141,11 @@ extern "C" fn init_array() {
         init_complete = true
     }
 }
+
 fn io_init() {
     unsafe {
-        // Initialize stdin/stdout/stderr, see https://github.com/rust-lang/rust/issues/51718
+        // Initialize stdin/stdout/stderr, 
+        // see https://github.com/rust-lang/rust/issues/51718
         stdio::stdin = stdio::default_stdin.get();
         stdio::stdout = stdio::default_stdout.get();
         stdio::stderr = stdio::default_stderr.get();
@@ -180,6 +192,7 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
         fn _init();
         fn main(argc: isize, argv: *mut *mut c_char, envp: *mut *mut c_char) -> c_int;
     }
+
     println!("relibc_start: sp={:?}", sp);
     // Ensure correct host system before executing more system calls
     relibc_verify_host();
@@ -190,11 +203,14 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
 
     println!("alloc init");
 
+    //println!("alloc init ok_________________");
+    
     // Set up the right allocator...
     // if any memory rust based memory allocation happen before this step .. we are doomed.
     alloc_init();
 
     println!("alloc init ok");
+
     if let Some(tcb) = ld_so::tcb::Tcb::current() {
         // Update TCB mspace
         tcb.mspace = ALLOCATOR.get_book_keeper();
@@ -207,11 +223,14 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
             tcb.linker_ptr = Box::into_raw(Box::new(Mutex::new(linker)));
         }
     }
+
     println!("to copy args");
     // Set up argc and argv
     let argc = sp.argc;
     let argv = sp.argv();
+
     platform::inner_argv = copy_string_array(argv, argc as usize);
+
     println!("copy args ok");
     platform::argv = platform::inner_argv.as_mut_ptr();
     // Special code for program_invocation_name and program_invocation_short_name
@@ -259,7 +278,6 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
     // Call init section
     _init();
     println!("after _init()");
-
     // Run init array
     {
         let mut f = &__init_array_start as *const _;
@@ -269,6 +287,7 @@ pub unsafe extern "C" fn relibc_start(sp: &'static Stack) -> ! {
             f = f.offset(1);
         }
     }
+
     println!("to run main()");
     // not argv or envp, because programs like bash try to modify this *const* pointer :|
     stdlib::exit(main(argc, platform::argv, platform::environ));
