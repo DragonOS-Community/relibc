@@ -7,8 +7,8 @@ use core::{
 use super::types::*;
 
 extern "C" {
-    fn mfree(ptr:*mut c_void)->*mut c_void;
-    fn malloc(size:usize)->*mut c_void;
+    fn _dragonos_free(ptr:*mut c_void)->*mut c_void;
+    fn _dragonos_malloc(size:usize)->*mut c_void;
 }
 
 pub struct Allocator {
@@ -33,22 +33,25 @@ impl Allocator {
 
 unsafe impl<'a> GlobalAlloc for Allocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        malloc(layout.size()) as *mut u8
+        alloc(layout.size()) as *mut u8
         //alloc_align(layout.size(), layout.align()) as *mut u8
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-        mfree(ptr as *mut c_void);
+        free(ptr as *mut c_void);
     }
 }
 
 pub unsafe fn alloc(size: usize) -> *mut c_void {
-    malloc(size)
+    println!("alloc size: {}", size);
+    _dragonos_malloc(size)
     //mspace_malloc(ALLOCATOR.get_book_keeper(), size)
 }
 
 pub unsafe fn alloc_align(size: usize, alignment: usize) -> *mut c_void {
-    malloc(size)
+    println!("alloc align size: {}, alignment: {}", size, alignment);
+    // TODO: 实现对齐分配
+    _dragonos_malloc(size)
     //mspace_memalign(ALLOCATOR.get_book_keeper(), alignment, size)
 }
 
@@ -59,7 +62,8 @@ pub unsafe fn realloc(ptr: *mut c_void, size: size_t) -> *mut c_void {
 }
 
 pub unsafe fn free(ptr: *mut c_void) {
-    mfree(ptr);
+    println!("free ptr: {:#018x}", ptr as usize);
+    _dragonos_free(ptr);
     //mspace_free(ALLOCATOR.get_book_keeper(), ptr)
 }
 
@@ -70,6 +74,8 @@ pub fn new_mspace() -> usize {
 
 #[cfg(target_os = "dragonos")]
 pub fn new_mspace() -> usize {
+
+    dbg!("new_mspace");
     // use core::sync::atomic::AtomicU8;
 
     // static mut space: [[u8; 128 * 16]; 2] = [[0; 128 * 16]; 2];

@@ -1,7 +1,20 @@
-// #include <stdlib.h>
-//#include <libsystem/syscall.h>
+// Copyright (C) DragonOS Community  longjin
 
-// #include <stddef.h>
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Or you can visit https://www.gnu.org/licenses/gpl-2.0.html
+
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
@@ -12,35 +25,7 @@
 #define PAGE_1G_SHIFT 30
 #define PAGE_GDT_SHIFT 39
 
-/**** for temporary use ****/
-//typedef unsigned long long uint64_t;
-//typedef long long int64_t;
 
-#define SYS_BRK 9
-#define SYS_SBRK 10
-
-long syscall_invoke(uint64_t syscall_id, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5, uint64_t arg6, uint64_t arg7)
-{
-    uint64_t __err_code;
-    __asm__ __volatile__(
-        "movq %2, %%r8 \n\t"
-        "movq %3, %%r9 \n\t"
-        "movq %4, %%r10 \n\t"
-        "movq %5, %%r11 \n\t"
-        "movq %6, %%r12 \n\t"
-        "movq %7, %%r13 \n\t"
-        "movq %8, %%r14 \n\t"
-        "movq %9, %%r15 \n\t"
-        "int $0x80   \n\t"
-        "movq %%rax, %0 \n\t"
-        :"=a"(__err_code)
-        : "a"(syscall_id), "m"(arg0), "m"(arg1), "m"(arg2), "m"(arg3), "m"(arg4), "m"(arg5), "m"(arg6), "m"(arg7)
-        : "memory", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "rcx", "rdx");
-    // printf("errcode = %#018lx\n", __err_code);
-    errno = __err_code;
-
-    return __err_code;
-}
 
 /***************************/
 
@@ -165,10 +150,10 @@ static int malloc_enlarge(int64_t size)
 {
     if (brk_base_addr == 0) // 第一次调用，需要初始化
     {
-        brk_base_addr = brk(-1);
+        brk_base_addr = sbrk(0);
         // printf("brk_base_addr=%#018lx\n", brk_base_addr);
         brk_managed_addr = brk_base_addr;
-        brk_max_addr = brk(-2);
+        brk_max_addr = sbrk(0);
     }
 
     int64_t free_space = brk_max_addr - brk_managed_addr;
@@ -176,7 +161,7 @@ static int malloc_enlarge(int64_t size)
     if (free_space < size) // 现有堆空间不足
     {
         if (sbrk(size - free_space) != (void *)(-1))
-            brk_max_addr = brk((-2));
+            brk_max_addr = sbrk((0));
         else
         {
             //put_string("malloc_enlarge(): no_mem\n", COLOR_YELLOW, COLOR_BLACK);
@@ -302,8 +287,8 @@ static void malloc_insert_free_list(malloc_mem_chunk_t *ck)
  *
  * 分配内存的时候，结点的prev next指针所占用的空间被当做空闲空间分配出去
  */
-void *malloc(ssize_t size)
-{   put_string("malloc_enlarge(): no_mem\n",1,3);
+void *_dragonos_malloc(ssize_t size)
+{
     
     // 计算需要分配的块的大小
     if (size + sizeof(uint64_t) <= sizeof(malloc_mem_chunk_t))
@@ -396,7 +381,7 @@ static void release_brk()
         if (delta <= 0) // 不用释放内存
             return;
         sbrk(-delta);
-        brk_max_addr = brk(-2);
+        brk_max_addr = sbrk(0);
         brk_managed_addr = brk_max_addr;
 
         malloc_free_list_end->length = brk_max_addr - (uint64_t)malloc_free_list_end;
@@ -407,7 +392,7 @@ static void release_brk()
  *
  * @param ptr 堆内存的指针
  */
-void mfree(void *ptr)
+void _dragonos_free(void *ptr)
 {
     // 找到结点（此时prev和next都处于未初始化的状态）
     malloc_mem_chunk_t *ck = (malloc_mem_chunk_t *)((uint64_t)ptr - sizeof(uint64_t));
