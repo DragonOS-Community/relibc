@@ -39,8 +39,8 @@
 #define PAGE_2M_MASK (~(PAGE_2M_SIZE - 1))
 
 // 将addr按照x的上边界对齐
-#define PAGE_4K_ALIGN(addr) (((unsigned long)(addr) + PAGE_4K_SIZE - 1) & PAGE_4K_MASK)
-#define PAGE_2M_ALIGN(addr) (((unsigned long)(addr) + PAGE_2M_SIZE - 1) & PAGE_2M_MASK)
+//#define PAGE_4K_ALIGN(addr) (((unsigned long)(addr) + PAGE_4K_SIZE - 1) & PAGE_4K_MASK)
+//#define PAGE_2M_ALIGN(addr) (((unsigned long)(addr) + PAGE_2M_SIZE - 1) & PAGE_2M_MASK)
 
 /**
  * @brief 显式链表的结点
@@ -49,6 +49,7 @@
 typedef struct malloc_mem_chunk_t
 {
     uint64_t length;                 // 整个块所占用的内存区域的大小
+    uint64_t padding;
     struct malloc_mem_chunk_t *prev; // 上一个结点的指针
     struct malloc_mem_chunk_t *next; // 下一个结点的指针
 } malloc_mem_chunk_t;
@@ -291,10 +292,11 @@ void *_dragonos_malloc(ssize_t size)
 {
     
     // 计算需要分配的块的大小
-    if (size + sizeof(uint64_t) <= sizeof(malloc_mem_chunk_t))
+    // reserve for len
+    if (size + 2*sizeof(uint64_t) <= sizeof(malloc_mem_chunk_t))
         size = sizeof(malloc_mem_chunk_t);
     else
-        size += sizeof(uint64_t);
+        size += 2*sizeof(uint64_t);
 
     // 采用best fit
     malloc_mem_chunk_t *ck = malloc_query_free_chunk_bf(size);
