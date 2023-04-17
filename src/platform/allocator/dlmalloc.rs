@@ -9,7 +9,6 @@ use super::types::*;
 extern "C" {
     fn create_mspace(capacity: size_t, locked: c_int) -> usize;
     fn create_mspace_with_base(base: *mut c_void, capacity: size_t, locked: c_int) -> usize;
-    fn create_mspace_with_base_(base: *mut c_void, capacity: size_t, locked: c_int)->usize;
     fn mspace_malloc(msp: usize, bytes: size_t) -> *mut c_void;
     fn mspace_memalign(msp: usize, alignment: size_t, bytes: size_t) -> *mut c_void;
     fn mspace_realloc(msp: usize, oldmem: *mut c_void, bytes: size_t) -> *mut c_void;
