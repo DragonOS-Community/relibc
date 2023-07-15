@@ -9,8 +9,10 @@ use crate::{
         sys_time::{timeval, timezone},
         sys_utsname::utsname,
         time::timespec,
+        stdio::FILE,
     },
 };
+
 
 pub use self::epoll::PalEpoll;
 mod epoll;
@@ -23,6 +25,7 @@ mod signal;
 
 pub use self::socket::PalSocket;
 mod socket;
+
 
 pub trait Pal {
     fn access(path: &CStr, mode: c_int) -> c_int;
@@ -178,4 +181,12 @@ pub trait Pal {
     fn write(fildes: c_int, buf: &[u8]) -> ssize_t;
 
     fn verify() -> bool;
+
+    //TODO 定义FILE结构体，暂时引用的是Header::stdio中的file
+    unsafe fn pclose(stream:&mut FILE)->c_int;
+
+    fn pipe(fildes: [c_int;2])->c_int;
+
+    unsafe fn popen(command:&CStr, mode:&CStr)->*mut FILE;
+
 }
