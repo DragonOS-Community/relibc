@@ -185,7 +185,7 @@ pub trait Pal {
     //TODO 定义FILE结构体，暂时引用的是Header::stdio中的file
     unsafe fn pclose(stream:&mut FILE)->c_int;
 
-    fn pipe(fildes: [c_int;2])->c_int;
+    fn pipe(fildes: &mut [c_int;2])->c_int;
 
     unsafe fn popen(command:&CStr, mode:&CStr)->*mut FILE;
 

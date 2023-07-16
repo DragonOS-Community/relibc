@@ -414,8 +414,8 @@ impl Pal for Sys {
         unimplemented!()
     }
 
-    fn pipe(fildes: &mut [c_int], flags: c_int)-> c_int{
-        e(unsafe{ syscall!(SYS_PIPE,fildes.as_mut_ptr(),flags)}) as c_int
+    fn pipe(fildes: &mut [c_int;2])-> c_int{
+        e(unsafe{ syscall!(SYS_PIPE,fildes.as_mut_ptr())}) as c_int
     }
 
     unsafe fn popen(command:&CStr, mode:&CStr)->*mut FILE {
