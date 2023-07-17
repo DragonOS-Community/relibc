@@ -466,7 +466,7 @@ pub extern "C" fn pause() -> c_int {
 #[no_mangle]
 pub unsafe extern "C" fn pipe(fildes: *mut c_int) -> c_int {
     //pipe2(fildes, 0)
-    Sys::pipe(fildes)
+    Sys::pipe(slice::from_raw_parts_mut(fildes, 2))
 }
 
 #[no_mangle]
