@@ -471,7 +471,7 @@ pub unsafe extern "C" fn pipe(fildes: *mut c_int) -> c_int {
 
 #[no_mangle]
 pub unsafe extern "C" fn pipe2(fildes: *mut c_int, flags: c_int) -> c_int {
-    Sys::pipe2(slice::from_raw_parts_mut(fildes, 2), flags)
+    Sys::pipe2(slice::from_raw_parts_mut(fildes,2), flags)
 }
 
 #[no_mangle]
