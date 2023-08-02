@@ -163,7 +163,8 @@ impl Pal for Sys {
         // let empty = b"\0";
         // let empty_ptr = empty.as_ptr() as *const c_char;
         // e(unsafe { syscall!(NEWFSTATAT, fildes, empty_ptr, buf, AT_EMPTY_PATH) }) as c_int
-        unimplemented!()
+        // unimplemented!()
+        e(unsafe { syscall!(SYS_FSTAT, fildes, buf) }) as c_int
     }
 
     fn fstatvfs(fildes: c_int, buf: *mut statvfs) -> c_int {
@@ -367,18 +368,11 @@ impl Pal for Sys {
         fildes: c_int,
         off: off_t,
     ) -> *mut c_void {
-        // e(syscall!(MMAP, addr, len, prot, flags, fildes, off)) as *mut c_void
-
-        // Due to DragonOS has not implement mmap yet,
-        // set the return value here as 0xFFFF_FFFF_FFFF_FFFF to match dlmalloc's requirements.
-        // See https://opengrok.ringotek.cn/xref/dragonos-relibc/src/c/dlmalloc.c?r=031194b9#5439
-        return !(0usize) as *mut c_void;
-        // unimplemented!()
+        e(syscall!(SYS_MMAP, addr, len, prot, flags, fildes, off)) as *mut c_void
     }
 
     unsafe fn mprotect(addr: *mut c_void, len: usize, prot: c_int) -> c_int {
-        // e(syscall!(MPROTECT, addr, len, prot)) as c_int
-        unimplemented!()
+        e(syscall!(SYS_MPROTECT, addr, len, prot)) as c_int
     }
 
     unsafe fn msync(addr: *mut c_void, len: usize, flags: c_int) -> c_int {
@@ -397,8 +391,7 @@ impl Pal for Sys {
     }
 
     unsafe fn munmap(addr: *mut c_void, len: usize) -> c_int {
-        // e(syscall!(MUNMAP, addr, len)) as c_int
-        unimplemented!()
+        e(syscall!(SYS_MUNMAP, addr, len)) as c_int
     }
 
     fn nanosleep(rqtp: *const timespec, rmtp: *mut timespec) -> c_int {
