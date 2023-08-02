@@ -4,7 +4,7 @@ use core_io::Write;
 use super::{errno, types::*, Pal};
 use crate::{
     c_str::CStr,
-    header::{dirent::dirent, errno::ENOSYS, signal::SIGCHLD, sys_stat::S_IFIFO, stdio::FILE},
+    header::{dirent::dirent, errno::ENOSYS, signal::SIGCHLD, stdio::FILE, sys_stat::S_IFIFO},
 };
 // use header::sys_resource::rusage;
 use crate::header::{
@@ -414,10 +414,9 @@ impl Pal for Sys {
         unimplemented!()
     }
 
-    fn pipe(fildes: &mut [c_int])-> c_int{
-        e(unsafe{ syscall!(SYS_PIPE,fildes.as_mut_ptr())}) as c_int
+    fn pipe(fildes: &mut [c_int]) -> c_int {
+        e(unsafe { syscall!(SYS_PIPE, fildes.as_mut_ptr()) }) as c_int
     }
-
 
     #[cfg(target_arch = "x86_64")]
     unsafe fn pte_clone(stack: *mut usize) -> pid_t {

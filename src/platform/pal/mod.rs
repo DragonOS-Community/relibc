@@ -3,16 +3,15 @@ use crate::{
     c_str::CStr,
     header::{
         dirent::dirent,
+        stdio::FILE,
         sys_resource::rlimit,
         sys_stat::stat,
         sys_statvfs::statvfs,
         sys_time::{timeval, timezone},
         sys_utsname::utsname,
         time::timespec,
-        stdio::FILE,
     },
 };
-
 
 pub use self::epoll::PalEpoll;
 mod epoll;
@@ -25,7 +24,6 @@ mod signal;
 
 pub use self::socket::PalSocket;
 mod socket;
-
 
 pub trait Pal {
     fn access(path: &CStr, mode: c_int) -> c_int;
@@ -182,5 +180,5 @@ pub trait Pal {
 
     fn verify() -> bool;
 
-    fn pipe(fildes: &mut [c_int])->c_int;
+    fn pipe(fildes: &mut [c_int]) -> c_int;
 }
