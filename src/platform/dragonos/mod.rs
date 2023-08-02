@@ -418,13 +418,6 @@ impl Pal for Sys {
         e(unsafe{ syscall!(SYS_PIPE,fildes.as_mut_ptr())}) as c_int
     }
 
-    unsafe fn popen(command:&CStr, mode:&CStr)->*mut FILE {
-        unimplemented!()
-    }
-
-    unsafe fn pclose(stream:&mut FILE)->c_int {
-        unimplemented!()
-    }
 
     #[cfg(target_arch = "x86_64")]
     unsafe fn pte_clone(stack: *mut usize) -> pid_t {

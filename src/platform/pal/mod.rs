@@ -182,11 +182,5 @@ pub trait Pal {
 
     fn verify() -> bool;
 
-    //TODO 定义FILE结构体，暂时引用的是Header::stdio中的file
-    unsafe fn pclose(stream:&mut FILE)->c_int;
-
     fn pipe(fildes: &mut [c_int])->c_int;
-
-    unsafe fn popen(command:&CStr, mode:&CStr)->*mut FILE;
-
 }
