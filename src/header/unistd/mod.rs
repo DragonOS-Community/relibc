@@ -467,17 +467,10 @@ pub extern "C" fn nice(incr: c_int) -> c_int {
 pub extern "C" fn pause() -> c_int {
     unimplemented!();
 }
-#[cfg(not(target_os = "dragonos"))]
+
 #[no_mangle]
 pub unsafe extern "C" fn pipe(fildes: *mut c_int) -> c_int {
     pipe2(fildes, 0)
-}
-
-//since dragonos hasn't implemented pipe2 system call yet. We use a seperate pipe function instead of a special type of pipe2 function
-#[cfg(target_os = "dragonos")]
-#[no_mangle]
-pub unsafe extern "C" fn pipe(fildes: *mut c_int) -> c_int {
-    Sys::pipe(slice::from_raw_parts_mut(fildes, 2))
 }
 
 #[no_mangle]

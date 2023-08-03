@@ -179,6 +179,4 @@ pub trait Pal {
     fn write(fildes: c_int, buf: &[u8]) -> ssize_t;
 
     fn verify() -> bool;
-
-    fn pipe(fildes: &mut [c_int]) -> c_int;
 }
