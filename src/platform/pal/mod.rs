@@ -3,7 +3,6 @@ use crate::{
     c_str::CStr,
     header::{
         dirent::dirent,
-        stdio::FILE,
         sys_resource::rlimit,
         sys_stat::stat,
         sys_statvfs::statvfs,

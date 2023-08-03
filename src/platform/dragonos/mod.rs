@@ -4,7 +4,7 @@ use core_io::Write;
 use super::{errno, types::*, Pal};
 use crate::{
     c_str::CStr,
-    header::{dirent::dirent, errno::ENOSYS, signal::SIGCHLD, stdio::FILE, sys_stat::S_IFIFO},
+    header::{dirent::dirent, errno::ENOSYS, signal::SIGCHLD, sys_stat::S_IFIFO},
 };
 // use header::sys_resource::rusage;
 use crate::header::{
