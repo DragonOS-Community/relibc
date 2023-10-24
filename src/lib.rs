@@ -15,6 +15,7 @@
 #![feature(stmt_expr_attributes)]
 #![feature(str_internals)]
 #![feature(thread_local)]
+#![feature(vec_into_raw_parts)]
 #![allow(clippy::cast_lossless)]
 #![allow(clippy::cast_ptr_alignment)]
 #![allow(clippy::derive_hash_xor_eq)]
@@ -39,6 +40,11 @@ extern crate rand;
 #[cfg(target_os = "linux")]
 #[macro_use]
 extern crate sc;
+
+// TODO: fix this: adjust to dragonos sc
+#[cfg(target_os = "dragonos")]
+#[macro_use]
+extern crate dsc;
 
 #[cfg(target_os = "redox")]
 extern crate syscall;

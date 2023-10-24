@@ -40,6 +40,10 @@ optional = true
 [target.'cfg(target_os = "linux")'.dependencies]
 sc = "0.2.3"
 
+[target.'cfg(target_os = "dragonos")'.dependencies]
+# Development
+dragonos-dsc = { git = "https://git.mirrors.dragonos.org/DragonOS-Community/dragonos-dsc.git", rev = "aa61cb0109" }
+
 [target.'cfg(target_os = "redox")'.dependencies]
 redox_syscall = "0.3"
 spin = "0.9.0"

@@ -4,8 +4,12 @@ use core::{fmt, ptr};
 
 pub use self::allocator::*;
 
-#[cfg(not(feature = "ralloc"))]
+#[cfg(all(not(feature = "ralloc"), not(target_os = "dragonos")))]
 #[path = "allocator/dlmalloc.rs"]
+mod allocator;
+
+#[cfg(all(not(feature = "ralloc"), target_os = "dragonos"))]
+#[path = "allocator/dragonos_malloc.rs"]
 mod allocator;
 
 #[cfg(feature = "ralloc")]
@@ -20,6 +24,10 @@ pub use self::sys::{e, Sys};
 
 #[cfg(all(not(feature = "no_std"), target_os = "linux"))]
 #[path = "linux/mod.rs"]
+pub(crate) mod sys;
+
+#[cfg(all(not(feature = "no_std"), target_os = "dragonos"))]
+#[path = "dragonos/mod.rs"]
 pub(crate) mod sys;
 
 #[cfg(all(not(feature = "no_std"), target_os = "redox"))]
@@ -37,13 +45,24 @@ pub mod rlb;
 #[cfg(target_os = "linux")]
 pub mod auxv_defs;
 
+#[cfg(target_os = "dragonos")]
+pub mod auxv_defs;
+
 #[cfg(target_os = "redox")]
 pub use redox_exec::auxv_defs;
 
 use self::types::*;
 pub mod types;
 
+#[cfg(not(target_os = "dragonos"))]
 #[thread_local]
+#[allow(non_upper_case_globals)]
+#[no_mangle]
+pub static mut errno: c_int = 0;
+
+/// DragonOS doesn't have thread_local, so we use a global variable instead.
+/// TODO: This is a hack, and should be fixed.
+#[cfg(target_os = "dragonos")]
 #[allow(non_upper_case_globals)]
 #[no_mangle]
 pub static mut errno: c_int = 0;
