@@ -1,19 +1,14 @@
 use core::arch::global_asm;
 
 // Needs to be defined in assembly because it can't have a function prologue
-// rax is register, 25 is RT_SIGRETURN
+// rax is register, 15 is RT_SIGRETURN
 #[cfg(target_arch = "x86_64")]
 global_asm!(
     "
     .global __restore_rt
     __restore_rt:
-        push   rbp      
-        mov    rbp,rsp
-        mov    eax, 15
-        int    0x80
-        nop
-        pop    rbp
-        ret  
+        mov rax, 15
+        syscall
 "
 );
 
